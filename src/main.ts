@@ -12,7 +12,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    bufferLogs: true
+    bufferLogs: true,
   });
 
   const expressApp = app.getHttpAdapter().getInstance() as Express;
@@ -40,9 +40,7 @@ async function bootstrap() {
     ) as { version: string };
     const config = new DocumentBuilder()
       .setTitle('ReconXi API')
-      .setDescription(
-        'AI-powered financial records reconciliation system',
-      )
+      .setDescription('AI-powered financial records reconciliation system')
       .setVersion(packageJson.version)
       .addBearerAuth()
       .build();

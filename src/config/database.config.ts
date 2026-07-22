@@ -16,7 +16,7 @@ export const databaseConfig = registerAs(
     migrations: [__dirname + '/../database/migrations/*{.ts,.js}'],
     synchronize: false,
     ssl: env.DATABASE_SSL ? { rejectUnauthorized: false } : false,
-    namingStrategy: new SnakeNamingStrategy(),  // <-- this is the key piece
+    namingStrategy: new SnakeNamingStrategy(), // <-- this is the key piece
     autoLoadEntities: true,
   }),
 );

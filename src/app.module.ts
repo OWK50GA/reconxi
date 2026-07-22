@@ -14,11 +14,7 @@ import { bullConfig } from './config/bull.config';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [
-        appConfig,
-        databaseConfig,
-        redisConfig,
-      ]
+      load: [appConfig, databaseConfig, redisConfig],
     }),
     TypeOrmModule.forRootAsync({
       useFactory: () => databaseConfig(),
@@ -26,7 +22,7 @@ import { bullConfig } from './config/bull.config';
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 60 ,
+        limit: 60,
       },
     ]),
     BullModule.forRoot(bullConfig),
