@@ -6,5 +6,4 @@ export const appConfig = registerAs('app', () => ({
   port: env.PORT,
   corsOrigin: env.CORS_ORIGIN,
   swaggerEnabled: env.SWAGGER_ENABLED,
-  encryptionKey: env.SECRET_MANAGER_ENCRYPTION_KEY,
 }));
