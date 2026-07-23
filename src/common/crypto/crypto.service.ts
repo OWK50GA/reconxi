@@ -17,9 +17,9 @@ export class CryptoService {
 
     private getKey(): Buffer {
         const key = this.appCfg.encryptionKey;
-        if (!key || key.length < 64) throw new Error('ENCRYPTION_KEY must be at least 32 characters');
+        if (!key || key.length !== 64) throw new Error('ENCRYPTION_KEY must be 64 hex characters');
 
-        return Buffer.from(key, 'utf8').subarray(0, 32);
+        return Buffer.from(key, 'hex');
     }
 
     encrypt(plainText: string): string {
@@ -56,7 +56,7 @@ export class CryptoService {
     }
 
     bcrypt_hash(preimage: string, rounds = 10): Promise<string> {
-        return bcrypt.hash(preimage, 10);
+        return bcrypt.hash(preimage, rounds);
     }
 
     bcrypt_compare(preimage: string, hash: string): Promise<boolean> {
