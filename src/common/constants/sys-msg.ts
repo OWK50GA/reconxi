@@ -17,6 +17,6 @@ export const SYS_MSG = {
   },
   AUTH: {
     INVALID_SESSION_ID: 'Invalid session id',
-    SESSION_EXPIRED: 'The requested session has expired. Login again'
-  }
+    SESSION_EXPIRED: 'The requested session has expired. Login again',
+  },
 };

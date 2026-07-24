@@ -1,15 +1,22 @@
 export function parseExpiryMs(expiry: string): number {
-  const unit = expiry.slice(-1);
-  const value = parseInt(expiry.slice(0, -1));
+  const match = /^(\d+)(s|m|h|d)$/.exec(expiry);
+  if (!match) {
+    throw new Error(
+      `Invalid expirty format: "${expiry}". Expected a positive integer followed by s, m, h, or d (e.g. "15m", "1h")`,
+    );
+  }
+
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
 
   switch (unit) {
-    case "s":
+    case 's':
       return value * 1000;
-    case "m":
+    case 'm':
       return value * 60 * 1000;
-    case "h":
+    case 'h':
       return value * 60 * 60 * 1000;
-    case "d":
+    case 'd':
       return value * 24 * 60 * 60 * 1000;
     default:
       throw new Error(`Unknown expiry unit: ${unit}`);

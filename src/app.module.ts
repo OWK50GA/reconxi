@@ -22,12 +22,7 @@ import { cryptoConfig } from './config/crypto.config';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [
-        appConfig, 
-        databaseConfig, 
-        redisConfig,
-        cryptoConfig
-      ],
+      load: [appConfig, databaseConfig, redisConfig, cryptoConfig],
     }),
     TypeOrmModule.forRootAsync({
       useFactory: () => databaseConfig(),
@@ -52,8 +47,8 @@ import { cryptoConfig } from './config/crypto.config';
         whitelist: true,
         transform: true,
         forbidNonWhitelisted: true,
-        transformOptions: { enableImplicitConversion: false }
-      })
+        transformOptions: { enableImplicitConversion: false },
+      }),
     },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },

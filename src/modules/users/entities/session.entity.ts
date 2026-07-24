@@ -4,12 +4,13 @@ import { User } from './user.entity';
 import { Exclude } from 'class-transformer';
 
 @Entity('user_sessions')
-@Index(['userId'])
 export class Session extends AbstractBaseEntity {
+  @Index('idxSessionUserId')
   @Column({ type: 'uuid' })
   userId: string;
 
   @Exclude()
+  @Index('idxSessionRefreshTokenHash')
   @Column({ type: 'varchar', length: 500, nullable: true })
   refreshTokenHash: string | null;
 
