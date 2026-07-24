@@ -160,6 +160,7 @@ jobs:
   lazarus-scanner:
     name: Lazarus Scanner
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -173,7 +174,7 @@ jobs:
 
       - name: Download lazarus_scanner.py
         run: |
-          curl -fsSL -o lazarus_scanner.py \
+          curl -fsSL --connect-timeout 15 --max-time 60 -o lazarus_scanner.py \
             https://raw.githubusercontent.com/hngprojects/lazarus-scanner/b1367e3a7a1463fbef90919867555a73f6acdf66/lazarus_scanner.py
           [ -s lazarus_scanner.py ] || { echo "FAIL: lazarus_scanner.py is empty or missing"; exit 1; }
 

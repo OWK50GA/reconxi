@@ -30,7 +30,7 @@
     "migration:show": "pnpm typeorm migration:show",
     "schema:drop": "pnpm typeorm schema:drop",
     "seed": "ts-node -r tsconfig-paths/register src/database/seeds/run-seed.ts",
-    "db:reset": "pnpm schema:drop && pnpm migration:run && pnpm seed"
+    "db:reset": "node -e \"if(process.env.NODE_ENV==='production'&&process.env.DB_RESET_CONFIRM!=='yes'){console.error('ERROR: db:reset is blocked in production. Set DB_RESET_CONFIRM=yes to override.');process.exit(1)}\" && pnpm schema:drop && pnpm migration:run && pnpm seed"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.4",

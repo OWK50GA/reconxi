@@ -1,5 +1,5 @@
 name: 'Setup project'
-description: 'Checks out code, sets up Node/pnpm, and installs dependencies'
+description: 'Sets up Node/pnpm and installs dependencies (checkout must be done by the caller)'
 
 inputs:
   node-version:
@@ -8,6 +8,9 @@ inputs:
   pnpm-version:
     description: 'pnpm version to use'
     required: true
+  ref:
+    description: 'Git ref passed by the caller (informational only; checkout is handled by the caller)'
+    required: false
 
 runs:
   using: "composite"
