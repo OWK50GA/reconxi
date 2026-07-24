@@ -20,7 +20,7 @@ export abstract class AbstractModelAction<T extends { id: string }> {
     identifierOptions: FindOptionsWhere<T>;
     relations?: Record<string, any>;
   }): Promise<T | null> {
-    return this.repository.findOne({
+    return await this.repository.findOne({
       where: opts.identifierOptions,
       relations: opts.relations,
     });

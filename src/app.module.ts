@@ -16,16 +16,13 @@ import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { RedisModule } from './common/redis/redis.module';
 import { CryptoModule } from './common/crypto/crypto.module';
+import { cryptoConfig } from './config/crypto.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [
-        appConfig, 
-        databaseConfig, 
-        redisConfig
-      ],
+      load: [appConfig, databaseConfig, redisConfig, cryptoConfig],
     }),
     TypeOrmModule.forRootAsync({
       useFactory: () => databaseConfig(),
@@ -50,8 +47,8 @@ import { CryptoModule } from './common/crypto/crypto.module';
         whitelist: true,
         transform: true,
         forbidNonWhitelisted: true,
-        transformOptions: { enableImplicitConversion: false }
-      })
+        transformOptions: { enableImplicitConversion: false },
+      }),
     },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
