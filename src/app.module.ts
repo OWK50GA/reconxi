@@ -16,6 +16,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { RedisModule } from './common/redis/redis.module';
 import { CryptoModule } from './common/crypto/crypto.module';
+import { cryptoConfig } from './config/crypto.config';
 
 @Module({
   imports: [
@@ -24,7 +25,8 @@ import { CryptoModule } from './common/crypto/crypto.module';
       load: [
         appConfig, 
         databaseConfig, 
-        redisConfig
+        redisConfig,
+        cryptoConfig
       ],
     }),
     TypeOrmModule.forRootAsync({
