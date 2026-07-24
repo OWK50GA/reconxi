@@ -1,8 +1,8 @@
 export function parseExpiryMs(expiry: string): number {
-  const match = /^(\d+)(s|m|h|d)$/.exec(expiry);
+  const match = /^([1-9]\d*)(s|m|h|d)$/.exec(expiry);
   if (!match) {
     throw new Error(
-      `Invalid expirty format: "${expiry}". Expected a positive integer followed by s, m, h, or d (e.g. "15m", "1h")`,
+      `Invalid expiry format: "${expiry}". Expected a positive integer followed by s, m, h, or d (e.g. "15m", "1h")`,
     );
   }
 
