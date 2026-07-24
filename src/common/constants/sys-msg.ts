@@ -15,4 +15,8 @@ export const SYS_MSG = {
     VALIDATION_FAILED: 'Request validation failed',
     INTERNAL_SERVER_ERROR: 'An unexpected server error occurred',
   },
+  AUTH: {
+    INVALID_SESSION_ID: 'Invalid session id',
+    SESSION_EXPIRED: 'The requested session has expired. Login again',
+  },
 };
