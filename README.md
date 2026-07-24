@@ -1,98 +1,197 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# ReconXi API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend API for ReconXi — an AI-powered financial reconciliation platform built for Nigerian SMEs, accounting firms, and finance teams.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## About ReconXi
 
-## Description
+ReconXi helps businesses match their internal financial records against bank statements, identify discrepancies, and resolve them efficiently. The platform combines intelligent matching algorithms with AI-generated insights to reduce manual reconciliation time from hours to minutes.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### What It Does
 
-## Project setup
+- **Smart Matching** — Automatically pairs transactions from your ledger with bank statement entries using amount, date, and description similarity
+- **Nigerian Bank Support** — Built-in understanding of Nigerian bank statement formats and narration styles
+- **Manual Review** — Interactive workspace for reviewing fuzzy matches and resolving discrepancies
+- **Audit Trail** — Complete history of every matching decision and override
+- **Export Reports** — Generate PDF and CSV reports with preparer/reviewer sign-off fields
+- **AI Summaries** — Plain-language reconciliation summaries for quick executive review
 
-```bash
-$ pnpm install
+### Key Features
+
+- Multi-organization support with role-based access (Admin / Member)
+- CSV and Excel file upload with flexible column mapping
+- Vector embedding-based description matching (OpenAI + pgvector)
+- Bank charge detection and annotation for common Nigerian fees
+- Email notifications for reconciliation completion and review requests
+- OAuth 2.0 authentication (Google SSO + email/password)
+- Match rate trends and reconciliation history dashboard
+
+## Tech Stack
+
+- **Framework**: NestJS (Node.js + TypeScript)
+- **Database**: PostgreSQL 14+ with pgvector extension
+- **Authentication**: JWT (access + refresh tokens via HttpOnly cookies)
+- **Queue**: BullMQ + Redis for async file processing
+- **AI/ML**: OpenAI API (text-embedding-3-small for semantic matching)
+- **Storage**: Local filesystem (extensible to cloud storage)
+- **Reports**: Puppeteer for PDF generation
+
+## Architecture
+
+```
+┌─────────────┐
+│   Client    │
+│  (Web App)  │
+└──────┬──────┘
+       │ HTTPS (REST + JSON)
+       ↓
+┌─────────────┐
+│  NestJS API │ ← This Repository
+│  (Node.js)  │
+└──────┬──────┘
+       │
+       ├──→ PostgreSQL (financial data + pgvector embeddings)
+       ├──→ Redis (queue + cache)
+       └──→ OpenAI API (embeddings + summaries)
 ```
 
-## Compile and run the project
+## Getting Started
+
+### Prerequisites
+
+- Node.js 20+
+- pnpm 10+
+- PostgreSQL 14+ with `pgvector` extension
+- Redis 6+
+- OpenAI API key
+
+### Installation
 
 ```bash
-# development
-$ pnpm run start
+# Install dependencies
+pnpm install
 
-# watch mode
-$ pnpm run start:dev
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your database credentials and API keys
 
-# production mode
-$ pnpm run start:prod
+# Run database migrations
+pnpm migration:run
+
+# Seed initial data (optional)
+pnpm seed
+
+# Start development server
+pnpm start:dev
 ```
 
-## Run tests
+### Running Tests
 
 ```bash
-# unit tests
-$ pnpm run test
+# Unit tests
+pnpm test
 
-# e2e tests
-$ pnpm run test:e2e
+# E2E tests
+pnpm test:e2e
 
-# test coverage
-$ pnpm run test:cov
+# Test coverage
+pnpm test:cov
 ```
 
-## Deployment
+## Project Structure
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+```
+src/
+├── modules/
+│   ├── auth/              # Authentication & authorization
+│   ├── users/             # User management
+│   ├── organizations/     # Multi-tenancy
+│   ├── reconciliations/   # Core reconciliation engine
+│   ├── files/             # File upload & processing
+│   ├── matches/           # Matching logic & workspace
+│   ├── reports/           # Export & PDF generation
+│   └── notifications/     # Email notifications
+├── common/                # Shared utilities & middleware
+├── config/                # Configuration management
+└── database/              # Migrations, entities, seeds
+```
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+## API Documentation
+
+API documentation is available via Swagger UI when the server is running:
+
+```
+http://localhost:3000/api/docs
+```
+
+## Environment Variables
+
+Key environment variables (see `.env.example` for full list):
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+NODE_ENV=development
+PORT=3000
+
+# Database
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_NAME=reconxi_db
+DATABASE_USER=reconxi_user
+DATABASE_PASSWORD=your_password
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# JWT
+JWT_ACCESS_SECRET=your_secret_here
+JWT_REFRESH_SECRET=your_secret_here
+
+# OpenAI
+OPENAI_API_KEY=sk-...
+
+# Google OAuth (optional)
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Scripts
 
-## Resources
+```bash
+# Development
+pnpm start:dev          # Start with hot reload
+pnpm start:debug        # Start with debugger
 
-Check out a few resources that may come in handy when working with NestJS:
+# Build
+pnpm build              # Compile TypeScript
+pnpm start:prod         # Run production build
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+# Database
+pnpm migration:generate # Generate new migration
+pnpm migration:run      # Run pending migrations
+pnpm migration:revert   # Revert last migration
+pnpm db:reset          # Drop, migrate, and seed (dev only)
 
-## Support
+# Code Quality
+pnpm lint               # Lint and auto-fix
+pnpm format             # Format code
+pnpm validate           # Lint + test + build
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Contributing
 
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+1. Create a feature branch from `dev`
+2. Make your changes with tests
+3. Run `pnpm validate` to ensure quality
+4. Submit a pull request to `dev`
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Proprietary - All rights reserved
+
+## Support
+
+For issues, questions, or feature requests, please contact the development team.
+
+---
+
+**ReconXi** — Making financial reconciliation simple, smart, and fast for Nigerian businesses.
