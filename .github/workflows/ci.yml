@@ -1,0 +1,229 @@
+name: CI Quality & Security Gate
+
+on:
+  pull_request:
+    branches: [dev, staging, master]
+  push:
+    branches: [dev, staging, master]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "10"
+
+jobs:
+  lint:
+    name: Lint & Style Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      - name: Setup project
+        uses: ./.github/actions/setup-project
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          pnpm-version: ${{ env.PNPM_VERSION }}
+          ref: ${{ github.sha }}
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Verify lint made no changes
+        run: |
+          git diff --name-only --exit-code || {
+            echo ""
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "  Lint auto-fixed files during CI."
+            echo "  Run 'pnpm run lint' locally"
+            echo "  and commit the changes before pushing."
+            echo ""
+            echo "  Modified files:"
+            git diff --name-only | sed 's/^/    - /'
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            exit 1;
+          }
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      - name: Setup project
+        uses: ./.github/actions/setup-project
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          pnpm-version: ${{ env.PNPM_VERSION }}
+          ref: ${{ github.sha }}
+
+      - name: Unit tests
+        run: pnpm run test:cov
+
+      - name: Upload Unit Test Coverage
+        if: failure()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: unit-test-coverage
+          path: coverage/
+          retention-days: 7
+
+  build:
+    name: Compilation Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      - name: Setup project
+        uses: ./.github/actions/setup-project
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          pnpm-version: ${{ env.PNPM_VERSION }}
+          ref: ${{ github.sha }}
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: build-dist-${{ github.sha }}
+          path: dist/
+          retention-days: 1
+
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build, lint, unit-tests]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      - name: Setup project
+        uses: ./.github/actions/setup-project
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          pnpm-version: ${{ env.PNPM_VERSION }}
+          ref: ${{ github.sha }}
+
+      - name: Download build artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+        with:
+          name: build-dist-${{ github.sha }}
+          path: dist/
+
+      - name: E2E tests
+        id: e2e
+        run: pnpm run test:e2e
+
+      - name: Upload E2E reports
+        if: failure() && steps.e2e.outcome == 'failure'
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: e2e-test-results
+          path: test-results/e2e/
+          retention-days: 7
+
+  forbidden-pattern-scan:
+    name: Forbidden Pattern Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      - name: Run forbidden pattern scan
+        run: bash scripts/forbidden-pattern-scan.sh "${{ github.workspace }}"
+
+  lazarus-scanner:
+    name: Lazarus Scanner
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        with:
+          python-version: '3.12'
+
+      - name: Download lazarus_scanner.py
+        run: |
+          curl -fsSL -o lazarus_scanner.py \
+            https://raw.githubusercontent.com/hngprojects/lazarus-scanner/b1367e3a7a1463fbef90919867555a73f6acdf66/lazarus_scanner.py
+          [ -s lazarus_scanner.py ] || { echo "FAIL: lazarus_scanner.py is empty or missing"; exit 1; }
+
+      - name: Run Lazarus scanner
+        run: python3 lazarus_scanner.py
+
+  security-scan:
+    name: Security & Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          persist-credentials: false
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          exit-code: 1
+          format: sarif
+          output: trivy-results.sarif
+
+      - name: Print Trivy table summary
+        if: always()
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          exit-code: 0
+          format: table
+
+      - name: Check Trivy SARIF output
+        if: always()
+        run: |
+          if [ -f trivy-results.sarif ]; then
+            echo "trivy-results.sarif found"
+          else
+            echo "trivy-results.sarif not found; skipping SARIF upload"
+          fi
+
+      - name: Upload Trivy SARIF to GitHub Security
+        if: failure() && hashFiles('trivy-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e
+        with:
+          sarif_file: trivy-results.sarif

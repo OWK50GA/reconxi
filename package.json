@@ -21,7 +21,16 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "validate": "pnpm run lint && pnpm run format && pnpm run test && pnpm run test:e2e && pnpm run build"
+    "validate": "pnpm run lint && pnpm run format && pnpm run test && pnpm run test:e2e && pnpm run build",
+    "typeorm": "typeorm-ts-node-commonjs -d src/database/data-source.ts",
+    "migration:generate": "ts-node -r tsconfig-paths/register tools/generate-migration.ts",
+    "migration:create": "typeorm-ts-node-commonjs migration:create",
+    "migration:run": "pnpm typeorm migration:run",
+    "migration:revert": "pnpm typeorm migration:revert",
+    "migration:show": "pnpm typeorm migration:show",
+    "schema:drop": "pnpm typeorm schema:drop",
+    "seed": "ts-node -r tsconfig-paths/register src/database/seeds/run-seed.ts",
+    "db:reset": "pnpm schema:drop && pnpm migration:run && pnpm seed"
   },
   "dependencies": {
     "@nestjs/bullmq": "^11.0.4",
