@@ -3,25 +3,41 @@ import { randomBytes, createCipheriv, createDecipheriv, createHash } from 'crypt
 import { appConfig } from '../../config/app.config';
 import { type ConfigType } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { cryptoConfig } from '../../config/crypto.config';
+import { parseExpiryMs } from '../utils';
 
 @Injectable()
 export class CryptoService {
     private readonly ALGORITHM = 'aes-256-gcm';
     private readonly IV_LENGTH = 12;
     private readonly TAG_LENGTH = 16;
-
+    
     constructor(
         @Inject(appConfig.KEY)
-        private readonly appCfg: ConfigType<typeof appConfig>
+        private readonly cryptoCfg: ConfigType<typeof cryptoConfig>
     ) {}
 
     private getKey(): Buffer {
-        const key = this.appCfg.encryptionKey;
+        const key = this.cryptoCfg.encryptionKey;
         if (!key || !/^[0-9a-fA-F]{64}$/.test(key)) {
             throw new Error('ENCRYPTION_KEY must be 64 hex characters');
         }
 
         return Buffer.from(key, 'hex');
+    }
+
+    getExpiry(token: "refresh" | "jwt"): number {
+        switch (token) {
+            case 'refresh': {
+                const refreshTokenExpiry = this.cryptoCfg.refreshTokenExpiry;
+                return parseExpiryMs(refreshTokenExpiry);
+            }
+            case 'jwt': {
+                const jwtExpiry = this.cryptoCfg.jwtAccessExpiry;
+                return parseExpiryMs(jwtExpiry);
+            }
+            default: return 0;
+        }
     }
 
     encrypt(plainText: string): string {
