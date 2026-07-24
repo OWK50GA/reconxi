@@ -32,36 +32,35 @@ PG_HBA="${PG_CONF_DIR}/pg_hba.conf"
 
 echo "Using Postgres ${PG_VERSION} config in ${PG_CONF_DIR}"
 
-# ---- Create or reconcile role and database ----
-# DB_PASSWORD is passed via a quoted psql variable — not via a shell argument
-# visible in the process list (the -v value appears in /proc but sudo -u postgres
-# keeps it within the postgres user's process space, not the shell's argv).
-# We use quote_literal() in SQL to safely embed it.
+# ---- Create or reconcile role ----
+# psql variable substitution (:'var') works at the top level but not inside
+# PL/pgSQL DO blocks. We use \gexec to execute the dynamically built SQL
+# string at the top level instead.
+#
+# Role: create if missing, otherwise reconcile password.
 sudo -u postgres psql -v ON_ERROR_STOP=1 \
   -v db_user="${DB_USER}" \
-  -v db_name="${DB_NAME}" \
   -v db_password="${DB_PASSWORD}" <<'SQL'
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'db_user') THEN
-    EXECUTE 'CREATE ROLE ' || quote_ident(:'db_user') || ' LOGIN PASSWORD ' || quote_literal(:'db_password');
+SELECT CASE
+  WHEN NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = :'db_user')
+    THEN 'CREATE ROLE ' || quote_ident(:'db_user') || ' LOGIN PASSWORD ' || quote_literal(:'db_password')
   ELSE
-    -- Reconcile password on rerun
-    EXECUTE 'ALTER ROLE ' || quote_ident(:'db_user') || ' PASSWORD ' || quote_literal(:'db_password');
-  END IF;
-END
-$$;
+    'ALTER ROLE ' || quote_ident(:'db_user') || ' PASSWORD ' || quote_literal(:'db_password')
+END \gexec
+SQL
 
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'db_name') THEN
-    EXECUTE 'CREATE DATABASE ' || quote_ident(:'db_name') || ' OWNER ' || quote_ident(:'db_user');
+# ---- Create or reconcile database ----
+# CREATE DATABASE cannot run inside a transaction block, so it must be a
+# top-level statement — another reason DO blocks don't work here.
+sudo -u postgres psql -v ON_ERROR_STOP=1 \
+  -v db_user="${DB_USER}" \
+  -v db_name="${DB_NAME}" <<'SQL'
+SELECT CASE
+  WHEN NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = :'db_name')
+    THEN 'CREATE DATABASE ' || quote_ident(:'db_name') || ' OWNER ' || quote_ident(:'db_user')
   ELSE
-    -- Reconcile owner on rerun
-    EXECUTE 'ALTER DATABASE ' || quote_ident(:'db_name') || ' OWNER TO ' || quote_ident(:'db_user');
-  END IF;
-END
-$$;
+    'ALTER DATABASE ' || quote_ident(:'db_name') || ' OWNER TO ' || quote_ident(:'db_user')
+END \gexec
 SQL
 
 # ---- Extensions ----
@@ -70,13 +69,9 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "citext";
 SQL
 
-# ---- Schema grants (DB_USER passed via psql -v, quoted in SQL) ----
+# ---- Schema grants (DB_USER passed via psql -v, quoted via quote_ident) ----
 sudo -u postgres psql -v ON_ERROR_STOP=1 -v db_user="${DB_USER}" -d "${DB_NAME}" <<'SQL'
-DO $$
-BEGIN
-  EXECUTE 'GRANT USAGE, CREATE ON SCHEMA public TO ' || quote_ident(:'db_user');
-END
-$$;
+SELECT 'GRANT USAGE, CREATE ON SCHEMA public TO ' || quote_ident(:'db_user') \gexec
 SQL
 
 # ---- Network config ----
@@ -98,7 +93,8 @@ else
   done
 fi
 
-# ---- Reload Postgres ----
-sudo systemctl reload postgresql
+# ---- Restart Postgres ----
+# listen_addresses requires a full restart to take effect; reload is not enough.
+sudo systemctl restart "postgresql@${PG_VERSION}-main"
 
 echo "Done. DB=${DB_NAME}, USER=${DB_USER}, EXTENSIONS=uuid-ossp,citext, REMOTE=${ALLOW_REMOTE}"
